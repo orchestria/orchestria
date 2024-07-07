@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "orchestria"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.12"
+license = "BSD-3-Clause"
+keywords = []
+authors = [{ name = "Silvano Cerza", email = "silvanocerza@gmail.com" }]
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = ["click", "dulwich", "rich", "ollama", "jinja2"]
+
+[project.scripts]
+orchestria = "orchestria.cli:main"
+
+[project.urls]
+Documentation = "https://github.com/silvanocerza/orchestria#readme"
+Issues = "https://github.com/silvanocerza/orchestria/issues"
+Source = "https://github.com/silvanocerza/orchestria"
+
+[tool.hatch.version]
+path = "orchestria/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = ["mypy"]
+
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:orchestria tests}"
+
+[tool.coverage.run]
+source_pkgs = ["orchestria", "tests"]
+branch = true
+parallel = true
+omit = ["orchestria/__about__.py"]
+
+[tool.coverage.paths]
+orchestria = ["orchestria", "*/orchestria/orchestria"]
+tests = ["tests", "*/orchestria/tests"]
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
