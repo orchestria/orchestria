@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: 2024-present Silvano Cerza <silvanocerza@gmail.com>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, List
+
+from orchestria.settings import SETTINGS
 
 
 @dataclass
@@ -29,3 +32,12 @@ class Config:
     supported_tools: Dict[str, str] | List[str] | str | None
     # The arguments to pass to the model when generating text
     generation_arguments: Dict[str, Any]
+
+    def store(self):
+        """
+        Stores an agent in the settings folder.
+        """
+        agent_path = SETTINGS._agents_path / f"{self.name}.json"
+        agent_path.write_text(json.dumps(asdict(self)))
+
+        SETTINGS.register_agent(self.name, str(agent_path))

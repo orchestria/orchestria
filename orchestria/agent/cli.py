@@ -69,7 +69,7 @@ def create(
         generation_arguments=generation_arguments or {},
     )
 
-    SETTINGS.store_agent(agent_config)
+    agent_config.store()
 
     rich.print(f"Agent [bold green]{name}[/] created successfully!")
 

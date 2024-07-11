@@ -97,7 +97,7 @@ class Agent:
                 assistant_response = {"role": "assistant", "content": ""}
                 async for part in await self._client.chat(
                     model=self._model, messages=messages, stream=True
-                ):
+                ):  # type: ignore
                     status.stop()
                     console.print(part["message"]["content"], end="")
                     assistant_response["content"] += part["message"]["content"]
