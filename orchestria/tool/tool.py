@@ -21,6 +21,7 @@ class Tool:
         name: str,
         description: str | None,
         language: str,
+        entrypoint: str,
         source: str,
         version: str,
         inputs_schema: Dict[str, str],
@@ -29,6 +30,7 @@ class Tool:
         self.name = name
         self._description = description
         self._language = language
+        self._entrypoint = entrypoint
         self._source = source
         self._version = version
         self._inputs_schema = inputs_schema
@@ -40,6 +42,7 @@ class Tool:
             name=config.name,
             description=config.description,
             language=config.language,
+            entrypoint=config.entrypoint,
             source=config.source,
             version=config.version,
             inputs_schema=config.inputs_schema,

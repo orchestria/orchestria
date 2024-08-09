@@ -16,6 +16,8 @@ class Config:
     # For the time being this is limited to Python
     # Ideally this would be a list of languages.
     language: str
+    # The entrypoint of the tool, usually the main file
+    entrypoint: str
     # The source of the tool, usually a git repository
     source: str
     # The version of the tool, usually a git commit hash or tag
@@ -24,3 +26,4 @@ class Config:
     inputs_schema: Dict[str, str]
     # The schema for the outputs of the tool
     outputs_schema: Dict[str, str]
+    # TODO: We need secrets
