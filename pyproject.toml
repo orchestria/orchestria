@@ -19,7 +19,15 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["click", "dulwich", "rich", "ollama", "jinja2", "requests"]
+dependencies = [
+  "hatch",
+  "click",
+  "dulwich",
+  "rich",
+  "ollama",
+  "jinja2",
+  "requests",
+]
 
 [project.scripts]
 orchestria = "orchestria.cli:main"
