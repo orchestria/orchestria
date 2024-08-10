@@ -2,9 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import json
+import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import dulwich
 import dulwich.client
@@ -25,6 +26,7 @@ class Tool:
         version: str,
         inputs_schema: Dict[str, str],
         outputs_schema: Dict[str, str],
+        secrets: List[str] | Dict[str, str] | None = None,
     ):
         self.name = name
         self.description = description
@@ -38,6 +40,17 @@ class Tool:
         # Or maybe we should overhaul this SETTINGS thing cause I don't like it.
         self._source_path = SETTINGS.registry["tools"].get(f"{source}_{version}")
 
+        if isinstance(secrets, list):
+            self._secrets = {}
+            for s in secrets:
+                try:
+                    self._secrets[s] = os.environ[s]
+                except KeyError as exc:
+                    msg = f"Secret '{s}' needed by tool '{name}' not found"
+                    raise ValueError(msg) from exc
+        else:
+            self._secrets = secrets
+
     @classmethod
     def from_config(cls, config: Config):
         return cls(
@@ -49,6 +62,7 @@ class Tool:
             version=config.version,
             inputs_schema=config.inputs_schema,
             outputs_schema=config.outputs_schema,
+            secrets=config.secrets,
         )
 
     @classmethod
@@ -136,6 +150,7 @@ class Tool:
             check=False,
             capture_output=True,
             text=True,
+            env=self._secrets,
         )
 
         return json.loads(result.stdout)

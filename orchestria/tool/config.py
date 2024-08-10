@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, List
 
 
 @dataclass
@@ -26,4 +26,5 @@ class Config:
     inputs_schema: Dict[str, str]
     # The schema for the outputs of the tool
     outputs_schema: Dict[str, str]
-    # TODO: We need secrets
+    # Secrets needed by the tool to run
+    secrets: List[str] | Dict[str, str] | None = None
