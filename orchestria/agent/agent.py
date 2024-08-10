@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import jinja2
-from ollama import Options
 from rich.console import Console
 
 from orchestria.settings import SETTINGS
@@ -34,8 +33,6 @@ class Agent:
         self._system_prompt = system_prompt or ""
         self._generation_kwargs = generation_arguments
 
-        # TODO: This should probably be gnerator kwargs
-        self._options = Options(stop=["Question: ", "Observation: "])
         # TODO: This should be part of the Agent manifest maybe, otherwise it's not very flexible
         # to use different system prompts
         self._action_regex = re.compile(r"^Action: (.*)\[(.*)\]$", re.MULTILINE)
@@ -60,11 +57,13 @@ class Agent:
             self._supported_tools = []
 
         if provider == "ollama":
-            from ollama import AsyncClient
+            from ollama import AsyncClient, Options
 
             self._client = AsyncClient()
+            # TODO: This should probably be gnerator kwargs
+            self._options = Options(stop=["Question: ", "Observation: "])
         else:
-            raise NotImplementedError("Only Ollama is supported")
+            raise NotImplementedError("{provider} is not supported as of now")
 
     @classmethod
     def from_config(cls, config: Config) -> "Agent":
@@ -138,12 +137,7 @@ class Agent:
                 status.start()
 
                 assistant_response = {"role": "assistant", "content": ""}
-                async for part in await self._client.chat(
-                    model=self._model,
-                    messages=messages,
-                    stream=True,
-                    options=self._options,
-                ):  # type: ignore
+                async for part in await self._chat(messages):  # type: ignore
                     status.stop()
                     if part["message"]["content"]:
                         console.print(part["message"]["content"], end="")
@@ -151,3 +145,18 @@ class Agent:
                 messages.append(assistant_response)
 
             console.print()
+
+    async def _chat(self, messages: List[Dict[str, str]]):
+        if self._provider == "ollama":
+            return self._chat_ollama(messages)
+        else:
+            raise NotImplementedError("{provider} is not supported as of now")
+
+    async def _chat_ollama(self, messages: List[Dict[str, str]]):
+        async for part in await self._client.chat(
+            model=self._model,
+            messages=messages,
+            stream=True,
+            options=self._options,
+        ):
+            yield part
