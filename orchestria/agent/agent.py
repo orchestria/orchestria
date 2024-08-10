@@ -128,6 +128,9 @@ class Agent:
                             raise exc
                         messages.append(message)
                         console.print(message["content"], end="\n")
+                    else:
+                        user_prompt = console.input(prompt="[red bold]>>>[/] ")
+                        messages.append({"role": "user", "content": user_prompt})
                 else:
                     user_prompt = console.input(prompt="[red bold]>>>[/] ")
                     messages.append({"role": "user", "content": user_prompt})
