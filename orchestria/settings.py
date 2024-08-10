@@ -61,6 +61,16 @@ class _Settings:
         registry["agents"][name] = folder
         self._config.write_text(json.dumps(registry))
 
+    def delete_agent(self, name: str):
+        """
+        Deletes an agent from the registry.
+        """
+        if name not in self.registry["agents"]:
+            return
+        agent = Path(self.registry["agents"].pop(name))
+        self._config.write_text(json.dumps(self.registry))
+        agent.unlink(missing_ok=True)
+
 
 # Dirty and ugly but does the job for the time being
 # TODO: Handle this in a better way

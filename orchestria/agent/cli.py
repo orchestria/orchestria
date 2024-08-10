@@ -84,6 +84,16 @@ def create(
     rich.print(f"Agent [bold green]{name}[/] created successfully!")
 
 
+@click.option("--name")
+@click.command("delete")
+def delete_agent(name: str = ""):
+    while not name:
+        agents = list(SETTINGS.registry["agents"].keys())
+        name = rich.prompt.Prompt.ask("Model to delete", choices=agents)
+    SETTINGS.delete_agent(name)
+    rich.print(f"Agent [bold green]{name}[/] deleted successfully!")
+
+
 @click.command("list")
 def list_agents():
     agents = SETTINGS.registry["agents"]
@@ -95,4 +105,5 @@ def list_agents():
 
 agent.add_command(start)
 agent.add_command(create)
+agent.add_command(delete_agent)
 agent.add_command(list_agents)
