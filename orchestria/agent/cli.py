@@ -60,13 +60,13 @@ def create(
             "Model provider", choices=["ollama"], default="ollama"
         )
     if not system_prompt:
-        system_prompt = rich.prompt.Prompt.ask("System prompt (single line): ")
+        system_prompt = rich.prompt.Prompt.ask("System prompt (single line)")
     if not supported_tools:
-        supported_tools = rich.prompt.Prompt.ask("Supported tools (comma separated): ")
+        supported_tools = rich.prompt.Prompt.ask("Supported tools (comma separated)")
         supported_tools = supported_tools.split(",")
     if not generation_arguments:
         generation_arguments = json.loads(
-            rich.prompt.Prompt.ask("Generation arguments (JSON format): ") or "{}"
+            rich.prompt.Prompt.ask("Generation arguments (JSON format)") or "{}"
         )
 
     agent_config = Config(
