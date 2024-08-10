@@ -4,15 +4,14 @@
 import json
 import shutil
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 import dulwich
 import dulwich.client
 import dulwich.repo
 
 from orchestria.settings import SETTINGS
-
-from .config import Config
+from orchestria.tool.config import Config
 
 
 class Tool:
@@ -28,13 +27,16 @@ class Tool:
         outputs_schema: Dict[str, str],
     ):
         self.name = name
-        self._description = description
+        self.description = description
         self._language = language
         self._entrypoint = entrypoint
         self._source = source
         self._version = version
-        self._inputs_schema = inputs_schema
-        self._outputs_schema = outputs_schema
+        self.inputs_schema = inputs_schema
+        self.outputs_schema = outputs_schema
+        # TODO: Ugly, this should be passed as a parameter maybe.
+        # Or maybe we should overhaul this SETTINGS thing cause I don't like it.
+        self._source_path = SETTINGS.registry["tools"].get(f"{source}_{version}")
 
     @classmethod
     def from_config(cls, config: Config):
@@ -112,5 +114,28 @@ class Tool:
         SETTINGS.register_tool(f"{source}_{version}", str(target_path))
         return target_path
 
-    def run(self):
-        pass
+    def run(self, args: str) -> Dict[str, Any]:
+        if self._language != "python":
+            raise NotImplementedError("Only Python tools are supported as of now")
+
+        import json
+        import re
+        import subprocess
+
+        # Some models are stupid and generate JSON with single quotes.
+        args = re.sub(r"(?<!\\)'", '"', args)
+
+        # We need to replace this or the shell will interpret them.
+        args = args.replace("{", "{{").replace("}", "}}")
+
+        command = ["hatch", "run", self._entrypoint, f"'{args}'"]
+        result = subprocess.run(
+            " ".join(command),
+            cwd=self._source_path,
+            shell=True,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        return json.loads(result.stdout)
