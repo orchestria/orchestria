@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import json
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 
 import jinja2
+from ollama import Options
 from rich.console import Console
 
 from orchestria.settings import SETTINGS
@@ -31,6 +33,13 @@ class Agent:
         self._provider = provider
         self._system_prompt = system_prompt or ""
         self._generation_kwargs = generation_arguments
+
+        # TODO: This should probably be gnerator kwargs
+        self._options = Options(stop=["Question: ", "Observation: "])
+        # TODO: This should be part of the Agent manifest maybe, otherwise it's not very flexible
+        # to use different system prompts
+        self._action_regex = re.compile(r"^Action: (.*)\[(.*)\]$", re.MULTILINE)
+        self._final_answer_regex = re.compile(r"^Final Answer: (.*)$", re.MULTILINE)
 
         if supported_tools == "*":
             # TODO: Load all tools
@@ -90,16 +99,51 @@ class Agent:
             )
             messages.append({"role": "system", "content": rendered})
         while True:
-            user_prompt = console.input(prompt="[red bold]>>>[/] ")
             with console.status("", spinner="point") as status:
+                status.stop()
+                if (
+                    messages
+                    and messages[-1]["role"] == "assistant"
+                    and not self._final_answer_regex.search(messages[-1]["content"])
+                ):
+                    if matches := list(
+                        self._action_regex.finditer(messages[-1]["content"])
+                    ):
+                        tool_name, tool_inputs = matches[-1].groups()
+                        tool = [
+                            t for t in self._supported_tools if t.name == tool_name
+                        ][0]
+                        try:
+                            tool_outputs = tool.run(tool_inputs)
+                            message = {
+                                "role": "assistant",
+                                "content": f"Observation: {tool_outputs}",
+                            }
+                        except Exception as exc:
+                            # TODO: Find a nice way to handle exceptions
+                            # message = {
+                            #     "role": "assistant",
+                            #     "content": f"Something went wrong calling the tool: {exc.with_traceback()}",
+                            # }
+                            raise exc
+                        messages.append(message)
+                        console.print(message["content"], end="\n")
+                else:
+                    user_prompt = console.input(prompt="[red bold]>>>[/] ")
+                    messages.append({"role": "user", "content": user_prompt})
+
                 status.start()
-                messages.append({"role": "user", "content": user_prompt})
+
                 assistant_response = {"role": "assistant", "content": ""}
                 async for part in await self._client.chat(
-                    model=self._model, messages=messages, stream=True
+                    model=self._model,
+                    messages=messages,
+                    stream=True,
+                    options=self._options,
                 ):  # type: ignore
                     status.stop()
-                    console.print(part["message"]["content"], end="")
+                    if part["message"]["content"]:
+                        console.print(part["message"]["content"], end="")
                     assistant_response["content"] += part["message"]["content"]
                 messages.append(assistant_response)
 
