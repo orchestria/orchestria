@@ -38,9 +38,11 @@ class Agent:
         self._action_regex = re.compile(r"^Action: (.*)\[(.*)\]$", re.MULTILINE)
         self._final_answer_regex = re.compile(r"^Final Answer: (.*)$", re.MULTILINE)
 
-        if supported_tools == "*":
-            # TODO: Load all tools
+        if supported_tools == ["*"]:
             self._supported_tools = []
+            for k in SETTINGS.registry["tools"].keys():
+                source, version = k.rsplit("_", 1)
+                self._supported_tools.append(Tool.load(source=source, version=version))
         elif isinstance(supported_tools, dict):
             self._supported_tools = [
                 Tool.load(source=source, version=version)
