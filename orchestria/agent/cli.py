@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import asyncio
+import json
 from typing import Any, Dict, List
 
 import click
@@ -48,16 +49,25 @@ def create(
     supported_tools: Dict[str, str] | List[str] | str | None = None,
     generation_arguments: Dict[str, Any] | None = None,
 ):
-    if not name:
+    while not name:
         name = rich.prompt.Prompt.ask("Name")
-    if not description:
+    while not description:
         description = rich.prompt.Prompt.ask("Description")
-    if not model:
+    while not model:
         model = rich.prompt.Prompt.ask("Model")
-    if not provider:
-        provider = rich.prompt.Prompt.ask("Model provider", choices=["ollama"])
+    while not provider:
+        provider = rich.prompt.Prompt.ask(
+            "Model provider", choices=["ollama"], default="ollama"
+        )
     if not system_prompt:
-        system_prompt = rich.prompt.Prompt.ask("")
+        system_prompt = rich.prompt.Prompt.ask("System prompt (single line): ")
+    if not supported_tools:
+        supported_tools = rich.prompt.Prompt.ask("Supported tools (comma separated): ")
+        supported_tools = supported_tools.split(",")
+    if not generation_arguments:
+        generation_arguments = json.loads(
+            rich.prompt.Prompt.ask("Generation arguments (JSON format): ") or "{}"
+        )
 
     agent_config = Config(
         name=name,
