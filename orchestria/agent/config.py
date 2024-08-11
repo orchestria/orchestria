@@ -23,13 +23,12 @@ class Config:
     # This can be a Jinja template.
     system_prompt: str | None
     # The tools the Agent supports
-    # This can be:
-    # * Dict with the source of the tool and its version
-    # * A List of strings with the tools sources, uses latest version
-    # * A List of strings with the tools names, must have a version in the registry already, uses latest version
-    # * A string with a * to support all tools in the registry
-    # * None if the agent doesn't support any tool
-    supported_tools: Dict[str, str] | List[str] | str | None
+    # The list can contain::
+    # * A Dict with the name of the tool and its version
+    # * The name of a tool to support the latest version
+    # * The string "*" to support all tools
+    # If the list is empty or None, the agent doesn't support any tool
+    supported_tools: List[Dict[str, str] | str] | None
     # The arguments to pass to the model when generating text
     generation_arguments: Dict[str, Any]
 

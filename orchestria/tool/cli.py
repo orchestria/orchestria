@@ -6,8 +6,6 @@ import rich
 
 from orchestria.settings import SETTINGS
 
-from .tool import Tool
-
 
 @click.group
 def tool():
@@ -28,11 +26,20 @@ def tool():
     help="Version of the tool to fetch, can be a commit hash, tag, or branch.",
 )
 def fetch(source: str, version: str):
-    _tool = Tool.load(source, version)
+    # TODO: We need to handle versions conflicts when calling this command.
+    # Probably not here but in other parts of the code.
+    # Though we should ask the user if they want to overwrite the existing version.
+    try:
+        tools = SETTINGS.clone_tool(source, version)
+    except ValueError as exc:
+        rich.print(
+            f"[bold red]Error[/] while fetching tool: [bold red]{exc}[/]",
+        )
+        return
 
-    rich.print(
-        f"Tool [bold red]{_tool.name}[/] fetched successfully!",
-    )
+    rich.print("The following tools have been cloned locally:")
+    for name in tools:
+        rich.print(f"[bold]- {name}[/]")
 
 
 @click.command("list")

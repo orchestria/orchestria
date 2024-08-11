@@ -23,7 +23,7 @@ class Agent:
         model: str,
         provider: str,
         system_prompt: str | None,
-        supported_tools: Dict[str, str] | List[str] | str | None,
+        supported_tools: List[Dict[str, str] | str] | None,
         generation_arguments: Dict[str, Any],
     ):
         self._name = name
@@ -38,25 +38,9 @@ class Agent:
         self._action_regex = re.compile(r"^Action: (.*)\[(.*)\]$", re.MULTILINE)
         self._final_answer_regex = re.compile(r"^Final Answer: (.*)$", re.MULTILINE)
 
-        if supported_tools == ["*"]:
-            self._supported_tools = []
-            for k in SETTINGS.registry["tools"].keys():
-                source, version = k.rsplit("_", 1)
-                self._supported_tools.append(Tool.load(source=source, version=version))
-        elif isinstance(supported_tools, dict):
-            self._supported_tools = [
-                Tool.load(source=source, version=version)
-                for source, version in supported_tools.items()
-            ]
-        elif isinstance(supported_tools, list):
-            # TODO: This can't work as of now since we rely on the tool version to find its path.
-            # We need to change it a bit.
-            raise NotImplementedError
-            # self._supported_tools = [
-            #     SETTINGS.load_tool(source=tool) for tool in supported_tools
-            # ]
-        else:
-            self._supported_tools = []
+        self._supported_tools = []
+        if supported_tools:
+            self._load_tools(supported_tools)
 
         if provider == "ollama":
             from ollama import AsyncClient, Options
@@ -66,6 +50,35 @@ class Agent:
             self._options = Options(stop=["Question: ", "Observation: "])
         else:
             raise NotImplementedError("{provider} is not supported as of now")
+
+    def _load_tools(self, supported_tools: List[Dict[str, str] | str]):
+        if "*" in supported_tools:
+            # LOAD ALL THE TOOLS
+            for path in SETTINGS.get_all_tools_path():
+                self._supported_tools.append(Tool.from_file(Path(path)))
+            return
+
+        for tool_data in supported_tools:
+            if isinstance(tool_data, str):
+                tool_path = SETTINGS.get_tool_path(tool_data)
+                if not tool_path:
+                    # At this point we should have already cloned the tool but it doesn't hurt to check
+                    msg = f"Tool '{tool_data}' not found"
+                    raise ValueError(msg)
+                tool = Tool.from_file(Path(tool_path))
+            elif isinstance(tool_data, dict):
+                name, version = list(tool_data.items())[0]
+                tool_path = SETTINGS.get_tool_path(name, version)
+                if not tool_path:
+                    # At this point we should have already cloned the tool but it doesn't hurt to check
+                    msg = f"Tool '{name}' not found"
+                    raise ValueError(msg)
+                tool = Tool.from_file(Path(tool_path), version)
+            else:
+                msg = "supported_tools must be a list of strings or a list of dictionaries"
+                raise ValueError(msg)
+
+            self._supported_tools.append(tool)
 
     @classmethod
     def from_config(cls, config: Config) -> "Agent":

@@ -18,8 +18,6 @@ class Config:
     language: str
     # The entrypoint of the tool, usually the main file
     entrypoint: str
-    # The source of the tool, usually a git repository
-    source: str
     # The version of the tool, usually a git commit hash or tag
     version: str
     # The schema for the inputs of the tool

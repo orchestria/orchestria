@@ -36,7 +36,6 @@ def start(name: str = ""):
             break
         name = rich.prompt.Prompt.ask("Choose an agent", choices=agents)
 
-
     agent_file = SETTINGS.get_agent_path(name)
     if not agent_file:
         rich.print(f"Agent [red bold]{name}[/] not found.")
@@ -81,6 +80,12 @@ def create(
     if not system_prompt:
         system_prompt = rich.prompt.Prompt.ask("System prompt (single line)")
     if not supported_tools:
+        # TODO: Rework this to prompt for tools in a nicer way.
+        # We can either show the available local tools and let them choose those or
+        # let them input the source and version manually.
+        # It's important that we don't save the sources in the agent config, but names and versions,
+        # so we need to clone the tools when creating the agent.
+        # This might be a bit annoying.
         supported_tools = rich.prompt.Prompt.ask("Supported tools (comma separated)")
         supported_tools = supported_tools.split(",")
     if not generation_arguments:
