@@ -21,8 +21,21 @@ def agent():
 
 
 @click.command
-@click.argument("name")
-def start(name):
+@click.argument("name", required=False)
+def start(name: str = ""):
+    while not name:
+        agents = list(SETTINGS.registry["agents"].keys())
+        if not agents:
+            rich.print(
+                "You need to create an agent with `orchestria agent create` first."
+            )
+            return
+        if len(agents) == 1:
+            # There's only one agent, no need to ask
+            name = agents[0]
+            break
+        name = rich.prompt.Prompt.ask("Choose an agent", choices=agents)
+
     rich.print(f"Starting agent [green bold]{name}[/]")
 
     async def _start():
