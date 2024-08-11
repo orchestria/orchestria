@@ -80,15 +80,8 @@ class Agent:
         )
 
     @classmethod
-    def load(cls, name: str) -> "Agent":
-        agent_path = SETTINGS.registry["agents"].get(name)
-
-        if not agent_path:
-            raise ValueError(f"Agent {name} not found")
-        else:
-            agent_path = Path(agent_path)
-
-        agent_config = json.loads(agent_path.read_text(encoding="utf-8"))
+    def from_file(cls, path: Path) -> "Agent":
+        agent_config = json.loads(path.read_text(encoding="utf-8"))
         return cls.from_config(Config(**agent_config))
 
     async def start_chat(self):

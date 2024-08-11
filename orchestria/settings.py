@@ -45,6 +45,14 @@ class _Settings:
             data["agents"] = {}
         return data
 
+    def get_agent_path(self, name: str) -> Path | None:
+        """
+        Returns the path of the agent with the given name.
+        """
+        if name not in self.registry["agents"]:
+            return None
+        return Path(self.registry["agents"].get(name))
+
     def register_tool(self, source_version: str, folder: str):
         """
         Saves a new toll in the register.

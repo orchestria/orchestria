@@ -36,10 +36,16 @@ def start(name: str = ""):
             break
         name = rich.prompt.Prompt.ask("Choose an agent", choices=agents)
 
+
+    agent_file = SETTINGS.get_agent_path(name)
+    if not agent_file:
+        rich.print(f"Agent [red bold]{name}[/] not found.")
+        return
+
     rich.print(f"Starting agent [green bold]{name}[/]")
 
     async def _start():
-        _agent = Agent.load(name)
+        _agent = Agent.from_file(agent_file)
         await _agent.start_chat()
 
     asyncio.run(_start())
