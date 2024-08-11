@@ -142,7 +142,9 @@ class Tool:
         # We need to replace this or the shell will interpret them.
         args = args.replace("{", "{{").replace("}", "}}")
 
-        command = ["hatch", "run", self._entrypoint, f"'{args}'"]
+        # We use a custom data dir so that we don't pollute the user's environment with tons of venvs.
+        # This way we can also delete the env easily when the user wants to delete a tool.
+        command = ["hatch", "--data-dir", ".venv", "run", self._entrypoint, f"'{args}'"]
         result = subprocess.run(
             " ".join(command),
             cwd=self._source_path,
