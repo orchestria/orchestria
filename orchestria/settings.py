@@ -67,8 +67,10 @@ class _Settings:
         """
         if name not in self.registry["agents"]:
             return
-        agent = Path(self.registry["agents"].pop(name))
-        self._config.write_text(json.dumps(self.registry))
+
+        registry = self.registry
+        agent = Path(registry["agents"].pop(name))
+        self._config.write_text(json.dumps(registry))
         agent.unlink(missing_ok=True)
 
 
