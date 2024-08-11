@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import click
 import rich
+import rich.prompt
 
 from orchestria.settings import SETTINGS
 
@@ -42,6 +43,24 @@ def fetch(source: str, version: str):
         rich.print(f"[bold]- {name}[/]")
 
 
+@click.option("--version")
+@click.option("--name")
+@click.command("delete")
+def delete_tool(name: str = "", version: str = ""):
+    while not name:
+        tools = list(SETTINGS.registry["tools"].keys())
+        name = rich.prompt.Prompt.ask("Tool to delete", choices=tools)
+
+    while not version:
+        versions = list(SETTINGS.registry["tools"][name].keys())
+        version = rich.prompt.Prompt.ask("Version to delete", choices=versions)
+
+    SETTINGS.delete_tool(name, version)
+    rich.print(
+        f"Tool [bold green]{name}[/] version [bold green]{version}[/] deleted successfully!"
+    )
+
+
 @click.command("list")
 def list_tools():
     tools = SETTINGS.registry["tools"]
@@ -52,4 +71,5 @@ def list_tools():
 
 
 tool.add_command(fetch)
+tool.add_command(delete_tool)
 tool.add_command(list_tools)

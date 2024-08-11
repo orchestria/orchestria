@@ -161,6 +161,24 @@ class _Settings:
         self._config.write_text(json.dumps(registry))
         agent.unlink(missing_ok=True)
 
+    def delete_tool(self, name: str, version: str):
+        """
+        Deletes a tool from the registry.
+        """
+        if name not in self.registry["tools"]:
+            return
+        if version not in self.registry["tools"][name]:
+            return
+
+        registry = self.registry
+        tool_path = Path(registry["tools"][name].pop(version))
+        if len(registry["tools"][name]) == 0:
+            registry["tools"].pop(name)
+        self._config.write_text(json.dumps(registry))
+        # NOTE: We're delete the whole folder here, though there could be other tools that share the same folder.
+        # We should find a better way to handle this. Let's keep it simple for now.
+        shutil.rmtree(tool_path, ignore_errors=True)
+
 
 # Dirty and ugly but does the job for the time being
 # TODO: Handle this in a better way
