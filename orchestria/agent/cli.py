@@ -113,7 +113,7 @@ def create(
 def delete_agent(name: str = ""):
     while not name:
         agents = list(SETTINGS.registry["agents"].keys())
-        name = rich.prompt.Prompt.ask("Model to delete", choices=agents)
+        name = rich.prompt.Prompt.ask("Agent to delete", choices=agents)
     SETTINGS.delete_agent(name)
     rich.print(f"Agent [bold green]{name}[/] deleted successfully!")
 
