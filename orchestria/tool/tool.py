@@ -132,7 +132,6 @@ class Tool:
         if self._language != "python":
             raise NotImplementedError("Only Python tools are supported as of now")
 
-        import json
         import re
         import subprocess
 
