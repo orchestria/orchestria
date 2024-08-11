@@ -145,7 +145,7 @@ class Agent:
         if self._provider == "ollama":
             return self._chat_ollama(messages)
         else:
-            raise NotImplementedError("{provider} is not supported as of now")
+            raise NotImplementedError(f"{self._provider} is not supported as of now")
 
     async def _chat_ollama(self, messages: List[Dict[str, str]]):
         async for part in await self._client.chat(

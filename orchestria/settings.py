@@ -51,7 +51,7 @@ class _Settings:
         """
         if name not in self.registry["agents"]:
             return None
-        return Path(self.registry["agents"].get(name))
+        return Path(self.registry["agents"][name])
 
     def register_tool(self, source_version: str, folder: str):
         """
