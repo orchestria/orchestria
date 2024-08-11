@@ -136,7 +136,7 @@ class _Settings:
         registry = self.registry
         folder = str(folder)
         if tool_name not in registry["tools"]:
-            registry["tools"] = {version: folder}
+            registry["tools"][tool_name] = {version: folder}
         else:
             registry["tools"][tool_name][version] = folder
         self._config.write_text(json.dumps(registry))
