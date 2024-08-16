@@ -34,9 +34,8 @@ class Agent:
         self._generation_kwargs = generation_arguments
 
         # TODO: This should be part of the Agent manifest maybe, otherwise it's not very flexible
-        # to use different system prompts
-        self._action_regex = re.compile(r"^Action: (.*)\[(.*)\]$", re.MULTILINE)
-        self._final_answer_regex = re.compile(r"^Final Answer: (.*)$", re.MULTILINE)
+        # to use different system prompts tailored for a specific model
+        self._tool_regex = re.compile(r"^(.*)\[(.*)\]$", re.MULTILINE)
 
         self._supported_tools = []
         if supported_tools:
@@ -47,7 +46,7 @@ class Agent:
 
             self._client = AsyncClient()
             # TODO: This should probably be gnerator kwargs
-            self._options = Options(stop=["Question: ", "Observation: "])
+            self._options = Options()
         else:
             raise NotImplementedError("{provider} is not supported as of now")
 
@@ -111,10 +110,9 @@ class Agent:
                 if (
                     messages
                     and messages[-1]["role"] == "assistant"
-                    and not self._final_answer_regex.search(messages[-1]["content"])
                 ):
                     if matches := list(
-                        self._action_regex.finditer(messages[-1]["content"])
+                        self._tool_regex.finditer(messages[-1]["content"])
                     ):
                         tool_name, tool_inputs = matches[-1].groups()
                         tool = [
@@ -123,8 +121,8 @@ class Agent:
                         try:
                             tool_outputs = tool.run(tool_inputs)
                             message = {
-                                "role": "assistant",
-                                "content": f"Observation: {tool_outputs}",
+                                "role": "user",
+                                "content": f"{tool_outputs}",
                             }
                         except Exception as exc:
                             # TODO: Find a nice way to handle exceptions
