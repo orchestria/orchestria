@@ -87,11 +87,11 @@ class _Settings:
             paths[name] = Path(path) / MANIFEST
         return paths
 
-    def clone_tool(self, source: str, version: str) -> List[str]:
+    def clone(self, source: str, version: str) -> Dict[str, List[str]]:
         """
-        Clone a tool repository.
-        Returns list containing the names of the tools cloned.
-        Raises if the repository doesn't contain the tool manifest.
+        Clone a repository.
+        Returns dictionary with agent and tool names.
+        Raises if the repository doesn't contain the OrchestrIA manifest.
         """
         try:
             client, path = dulwich.client.get_transport_and_path(source)
@@ -119,14 +119,24 @@ class _Settings:
         with manifest_path.open() as p:
             manifest = yaml.safe_load(p)
 
-        configs = manifest["tools"]
-        names = []
-        if isinstance(configs, list):
-            for tool in configs:
-                names.append(tool["name"])
+        tool_configs = manifest["tools"]
+        names = {"tools": [], "agents": []}
+        if isinstance(tool_configs, list):
+            for tool in tool_configs:
+                names["tools"] = tool["name"]
                 self.register_tool(tool["name"], version, target_path)
         else:
             msg = f"Invalid tool '{MANIFEST}' format"
+            raise ValueError(msg)
+
+
+        agent_configs = manifest["agents"]
+        if isinstance(agent_configs, list):
+            for agent in agent_configs:
+                names["agents"] = agent["name"]
+                self.register_agent(agent["name"], target_path)
+        else:
+            msg = f"Invalid agent '{MANIFEST}' format"
             raise ValueError(msg)
 
         return names
@@ -143,12 +153,12 @@ class _Settings:
             registry["tools"][tool_name][version] = folder
         self._config.write_text(json.dumps(registry))
 
-    def register_agent(self, name: str, folder: str):
+    def register_agent(self, name: str, folder: str | Path):
         """
         Saves a new agent in the register.
         """
         registry = self.registry
-        registry["agents"][name] = folder
+        registry["agents"][name] = str(folder)
         self._config.write_text(json.dumps(registry))
 
     def delete_agent(self, name: str):

@@ -6,6 +6,7 @@ import click
 
 from orchestria.agent.cli import agent
 from orchestria.tool.cli import tool
+from orchestria.fetch import fetch
 
 
 @click.group
@@ -15,3 +16,4 @@ def main():
 
 main.add_command(agent)
 main.add_command(tool)
+main.add_command(fetch)

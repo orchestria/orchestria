@@ -31,7 +31,7 @@ def fetch(source: str, version: str):
     # Probably not here but in other parts of the code.
     # Though we should ask the user if they want to overwrite the existing version.
     try:
-        tools = SETTINGS.clone_tool(source, version)
+        tools = SETTINGS.clone(source, version)
     except ValueError as exc:
         rich.print(
             f"[bold red]Error[/] while fetching tool: [bold red]{exc}[/]",
