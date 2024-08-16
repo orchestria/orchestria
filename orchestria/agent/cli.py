@@ -44,7 +44,7 @@ def start(name: str = ""):
     rich.print(f"Starting agent [green bold]{name}[/]")
 
     async def _start():
-        _agent = Agent.from_file(agent_file)
+        _agent = Agent.from_file(agent_file, name=name)
         await _agent.start_chat()
 
     asyncio.run(_start())
@@ -87,7 +87,7 @@ def create(
         # so we need to clone the tools when creating the agent.
         # This might be a bit annoying.
         supported_tools = rich.prompt.Prompt.ask("Supported tools (comma separated)")
-        supported_tools = supported_tools.split(",")
+        supported_tools = supported_tools.split(",") if supported_tools else []
     if not generation_arguments:
         generation_arguments = json.loads(
             rich.prompt.Prompt.ask("Generation arguments (JSON format)") or "{}"
@@ -108,14 +108,21 @@ def create(
     rich.print(f"Agent [bold green]{name}[/] created successfully!")
 
 
+@click.option("--version")
 @click.option("--name")
 @click.command("delete")
-def delete_agent(name: str = ""):
+def delete_agent(name: str = "", version: str = ""):
     while not name:
         agents = list(SETTINGS.registry["agents"].keys())
         name = rich.prompt.Prompt.ask("Agent to delete", choices=agents)
-    SETTINGS.delete_agent(name)
-    rich.print(f"Agent [bold green]{name}[/] deleted successfully!")
+    while not version:
+        versions = list(SETTINGS.registry["agents"][name].keys())
+        version = rich.prompt.Prompt.ask("Version to delete", choices=versions)
+
+    SETTINGS.delete_agent(name, version)
+    rich.print(
+        f"Agent [bold green]{name}[/] version [bold green]{version}[/] deleted successfully!"
+    )
 
 
 @click.command("list")

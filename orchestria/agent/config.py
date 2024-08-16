@@ -1,11 +1,12 @@
 # SPDX-FileCopyrightText: 2024-present Silvano Cerza <silvanocerza@gmail.com>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-import json
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List
 
-from orchestria.settings import SETTINGS
+import yaml
+
+from orchestria.settings import MANIFEST, SETTINGS
 
 
 @dataclass
@@ -36,7 +37,11 @@ class Config:
         """
         Stores an agent in the settings folder.
         """
-        agent_path = SETTINGS._agents_path / f"{self.name}.json"
-        agent_path.write_text(json.dumps(asdict(self)))
+        agent_path = SETTINGS._repos_path / "local" / self.name
+        agent_path.mkdir(parents=True, exist_ok=True)
+        manifest_path = agent_path / MANIFEST
 
-        SETTINGS.register_agent(self.name, str(agent_path))
+        with manifest_path.open("w") as f:
+            yaml.dump({"agents": [asdict(self)]}, f)
+
+        SETTINGS.register_agent(self.name, "local", str(agent_path))

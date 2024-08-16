@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: 2024-present Silvano Cerza <silvanocerza@gmail.com>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List
 
 import jinja2
+import yaml
 from rich.console import Console
 
 from orchestria.settings import SETTINGS
@@ -92,9 +92,35 @@ class Agent:
         )
 
     @classmethod
-    def from_file(cls, path: Path) -> "Agent":
-        agent_config = json.loads(path.read_text(encoding="utf-8"))
-        return cls.from_config(Config(**agent_config))
+    def from_file(cls, path: Path, name: str = "") -> "Agent":
+        """
+        Load an agent from a yaml file.
+        If there are multiple agents in the file and the name is not provided it will raise.
+        """
+        configs = yaml.safe_load(path.read_text(encoding="utf-8"))
+        # This must be a dict
+        assert isinstance(configs, dict)
+
+        if "agents" not in configs:
+            msg = f"No agents found in file '{path}'"
+            raise ValueError(msg)
+
+        configs = configs["agents"]
+
+        if not isinstance(configs, list):
+            msg = "Agents must be a list"
+            raise ValueError(msg)
+
+        if len(configs) > 1 and not name:
+            msg = "Multiple agents in file, name must be provided"
+            raise ValueError(msg)
+
+        for c in configs:
+            if c["name"] == name:
+                return cls.from_config(Config(**c))
+
+        msg = f"Agent '{name}' not found in file '{path}'"
+        raise ValueError(msg)
 
     async def start_chat(self):
         console = Console()
@@ -107,10 +133,7 @@ class Agent:
         while True:
             with console.status("", spinner="point") as status:
                 status.stop()
-                if (
-                    messages
-                    and messages[-1]["role"] == "assistant"
-                ):
+                if messages and messages[-1]["role"] == "assistant":
                     if matches := list(
                         self._tool_regex.finditer(messages[-1]["content"])
                     ):

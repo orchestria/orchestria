@@ -6,11 +6,10 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List
 
-import yaml
-
 import dulwich
 import dulwich.client
 import dulwich.repo
+import yaml
 
 MANIFEST = ".orchestria.yml"
 
@@ -25,13 +24,9 @@ class _Settings:
         if not self.folder.exists():
             self.folder.mkdir(parents=True)
 
-        self._agents_path = folder / "agents"
-        if not self._agents_path.exists():
-            self._agents_path.mkdir(parents=True)
-
-        self._tools_path = folder / "tools"
-        if not self._tools_path.exists():
-            self._tools_path.mkdir(parents=True)
+        self._repos_path = folder / "repos"
+        if not self._repos_path.exists():
+            self._repos_path.mkdir(parents=True)
 
         # Global config files
         self._config = folder / "config.json"
@@ -54,27 +49,30 @@ class _Settings:
             data["agents"] = {}
         return data
 
-    def get_agent_path(self, name: str) -> Path | None:
-        """
-        Returns the path of the agent with the given name.
-        """
-        if name not in self.registry["agents"]:
+    def _get_path(self, resource: str, name: str, version: str) -> Path | None:
+        if name not in self.registry[resource]:
             return None
-        return Path(self.registry["agents"][name])
+        if version and version not in self.registry[resource][name]:
+            return None
+        if not version:
+            # TODO: Get the latest version checking semver
+            versions = list(self.registry[resource][name].values())
+            return Path(versions[0]) / MANIFEST
+        return Path(self.registry[resource][name][version]) / MANIFEST
+
+    def get_agent_path(self, name: str, version: str = "") -> Path | None:
+        """
+        Returns the path of the agent with the given name and version.
+        If no version is provided, the latest version is returned.
+        """
+        return self._get_path("agents", name, version)
 
     def get_tool_path(self, name: str, version: str = "") -> Path | None:
         """
         Returns the path of the tool with the given name and version.
         If no version is provided, the latest version is returned.
         """
-        if name not in self.registry["tools"]:
-            return None
-        if version and version not in self.registry["tools"][name]:
-            return None
-        if not version:
-            # TODO: Get the latest version checking semver
-            return Path(self.registry["tools"][name].values()[0]) / MANIFEST
-        return Path(self.registry["tools"][name][version]) / MANIFEST
+        return self._get_path("tools", name, version)
 
     def get_all_tools_path(self) -> Dict[str, Path]:
         """
@@ -98,7 +96,7 @@ class _Settings:
         except ValueError as exc:
             raise ValueError("Invalid URL") from exc
 
-        target_path = self._tools_path / Path(path.replace(".git", "")) / version
+        target_path = self._repos_path / Path(path.replace(".git", "")) / version
         target_path.mkdir(parents=True, exist_ok=True)
 
         client.clone(
@@ -129,67 +127,64 @@ class _Settings:
             msg = f"Invalid tool '{MANIFEST}' format"
             raise ValueError(msg)
 
-
         agent_configs = manifest["agents"]
         if isinstance(agent_configs, list):
             for agent in agent_configs:
                 names["agents"] = agent["name"]
-                self.register_agent(agent["name"], target_path)
+                self.register_agent(agent["name"], version, target_path)
         else:
             msg = f"Invalid agent '{MANIFEST}' format"
             raise ValueError(msg)
 
         return names
 
-    def register_tool(self, tool_name: str, version: str, folder: str | Path):
+    def _register(self, resource: str, name: str, version: str, folder: str | Path):
+        registry = self.registry
+        folder = str(folder)
+        if name not in registry[resource]:
+            registry[resource][name] = {version: folder}
+        else:
+            registry[resource][name][version] = folder
+        self._config.write_text(json.dumps(registry))
+
+    def register_tool(self, name: str, version: str, folder: str | Path):
         """
         Saves a new tool in the register for future retrieval.
         """
-        registry = self.registry
-        folder = str(folder)
-        if tool_name not in registry["tools"]:
-            registry["tools"][tool_name] = {version: folder}
-        else:
-            registry["tools"][tool_name][version] = folder
-        self._config.write_text(json.dumps(registry))
+        self._register("tools", name, version, folder)
 
-    def register_agent(self, name: str, folder: str | Path):
+    def register_agent(self, name: str, version: str, folder: str | Path):
         """
         Saves a new agent in the register.
         """
-        registry = self.registry
-        registry["agents"][name] = str(folder)
-        self._config.write_text(json.dumps(registry))
+        self._register("agents", name, version, folder)
 
-    def delete_agent(self, name: str):
-        """
-        Deletes an agent from the registry.
-        """
-        if name not in self.registry["agents"]:
+    def _delete(self, resource: str, name: str, version: str):
+        if name not in self.registry[resource]:
+            return
+        if version not in self.registry[resource][name]:
             return
 
         registry = self.registry
-        agent = Path(registry["agents"].pop(name))
+        path = Path(registry[resource][name].pop(version))
+        if len(registry[resource][name]) == 0:
+            registry[resource].pop(name)
         self._config.write_text(json.dumps(registry))
-        agent.unlink(missing_ok=True)
+        # NOTE: We're delete the whole folder here, though there could be other tools that share the same folder.
+        # We should find a better way to handle this. Let's keep it simple for now.
+        shutil.rmtree(path, ignore_errors=True)
+
+    def delete_agent(self, name: str, version: str):
+        """
+        Deletes an agent from the registry.
+        """
+        self._delete("agents", name, version)
 
     def delete_tool(self, name: str, version: str):
         """
         Deletes a tool from the registry.
         """
-        if name not in self.registry["tools"]:
-            return
-        if version not in self.registry["tools"][name]:
-            return
-
-        registry = self.registry
-        tool_path = Path(registry["tools"][name].pop(version))
-        if len(registry["tools"][name]) == 0:
-            registry["tools"].pop(name)
-        self._config.write_text(json.dumps(registry))
-        # NOTE: We're delete the whole folder here, though there could be other tools that share the same folder.
-        # We should find a better way to handle this. Let's keep it simple for now.
-        shutil.rmtree(tool_path, ignore_errors=True)
+        self._delete("tools", name, version)
 
 
 # Dirty and ugly but does the job for the time being
