@@ -6,11 +6,13 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List
 
+import yaml
+
 import dulwich
 import dulwich.client
 import dulwich.repo
 
-TOOL_MANIFEST = "orchestria_tool.json"
+MANIFEST = ".orchestria.yml"
 
 
 class _Settings:
@@ -71,18 +73,18 @@ class _Settings:
             return None
         if not version:
             # TODO: Get the latest version checking semver
-            return Path(self.registry["tools"][name].values()[0]) / TOOL_MANIFEST
-        return Path(self.registry["tools"][name][version]) / TOOL_MANIFEST
+            return Path(self.registry["tools"][name].values()[0]) / MANIFEST
+        return Path(self.registry["tools"][name][version]) / MANIFEST
 
-    def get_all_tools_path(self) -> List[Path]:
+    def get_all_tools_path(self) -> Dict[str, Path]:
         """
-        Returns a list with all the paths of the tools.
+        Returns a dictionary with tool's name as key and the path to the manifest file as value.
         If multiple versions of the same tool are present, the latest one is returned.
         """
-        paths = []
-        for versions in self.registry["tools"].values():
+        paths = {}
+        for name, versions in self.registry["tools"].items():
             path = list(versions.values())[0]
-            paths.append(Path(path) / TOOL_MANIFEST)
+            paths[name] = Path(path) / MANIFEST
         return paths
 
     def clone_tool(self, source: str, version: str) -> List[str]:
@@ -108,23 +110,23 @@ class _Settings:
         # rather than checking the remote repository. To check remote repositories we would need to
         # to parse the URL, check the service, know the service API to get the repo files, etc.
         # This works.
-        manifest_path = target_path / TOOL_MANIFEST
+        manifest_path = target_path / MANIFEST
         if not (manifest_path).exists():
             shutil.rmtree(target_path)
-            msg = f"Invalid tool repository, missing '{TOOL_MANIFEST}'"
+            msg = f"Invalid tool repository, missing '{MANIFEST}'"
             raise ValueError(msg)
 
-        manifest = json.loads(manifest_path.read_text())
+        with manifest_path.open() as p:
+            manifest = yaml.safe_load(p)
+
+        configs = manifest["tools"]
         names = []
-        if isinstance(manifest, list):
-            for tool in manifest:
+        if isinstance(configs, list):
+            for tool in configs:
                 names.append(tool["name"])
-                self.register_tool(tool["name"], tool["version"], target_path)
-        elif isinstance(manifest, dict):
-            names.append(manifest["name"])
-            self.register_tool(manifest["name"], version, target_path)
+                self.register_tool(tool["name"], version, target_path)
         else:
-            msg = f"Invalid tool '{TOOL_MANIFEST}' format"
+            msg = f"Invalid tool '{MANIFEST}' format"
             raise ValueError(msg)
 
         return names

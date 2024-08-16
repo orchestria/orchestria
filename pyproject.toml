@@ -21,6 +21,7 @@ classifiers = [
 ]
 dependencies = [
   "hatch",
+  "ryaml",
   "click",
   "dulwich",
   "rich",

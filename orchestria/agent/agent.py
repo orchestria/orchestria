@@ -54,8 +54,8 @@ class Agent:
     def _load_tools(self, supported_tools: List[Dict[str, str] | str]):
         if "*" in supported_tools:
             # LOAD ALL THE TOOLS
-            for path in SETTINGS.get_all_tools_path():
-                self._supported_tools.append(Tool.from_file(Path(path)))
+            for name, path in SETTINGS.get_all_tools_path().items():
+                self._supported_tools.append(Tool.from_file(Path(path), name=name))
             return
 
         for tool_data in supported_tools:
@@ -73,7 +73,7 @@ class Agent:
                     # At this point we should have already cloned the tool but it doesn't hurt to check
                     msg = f"Tool '{name}' not found"
                     raise ValueError(msg)
-                tool = Tool.from_file(Path(tool_path), version)
+                tool = Tool.from_file(Path(tool_path))
             else:
                 msg = "supported_tools must be a list of strings or a list of dictionaries"
                 raise ValueError(msg)
