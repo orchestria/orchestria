@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = ''
 readme = "README.md"
 requires-python = ">=3.12"
-license = "BSD-3-Clause"
+license = "AGPL-3.0-or-later"
 keywords = []
 authors = [{ name = "Silvano Cerza", email = "silvanocerza@gmail.com" }]
 
