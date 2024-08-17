@@ -35,7 +35,7 @@ class Agent:
 
         # TODO: This should be part of the Agent manifest maybe, otherwise it's not very flexible
         # to use different system prompts tailored for a specific model
-        self._tool_regex = re.compile(r"^(.*)\[(.*)\]$", re.MULTILINE)
+        self._tool_regex = re.compile(r"^(.*?)\[(.*)\]$", re.MULTILINE)
 
         self._supported_tools = []
         if supported_tools:
