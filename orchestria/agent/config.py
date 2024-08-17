@@ -22,16 +22,16 @@ class Config:
     provider: str
     # The system prompt for the model, if any.
     # This can be a Jinja template.
-    system_prompt: str | None
+    system_prompt: str | None = None
     # The tools the Agent supports
     # The list can contain::
     # * A Dict with the name of the tool and its version
     # * The name of a tool to support the latest version
     # * The string "*" to support all tools
     # If the list is empty or None, the agent doesn't support any tool
-    supported_tools: List[Dict[str, str] | str] | None
+    supported_tools: List[Dict[str, str] | str] | None = None
     # The arguments to pass to the model when generating text
-    generation_arguments: Dict[str, Any]
+    generation_arguments: Dict[str, Any] | None = None
 
     def store(self):
         """

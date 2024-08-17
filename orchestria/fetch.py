@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import click
 import rich
+
 from orchestria.settings import SETTINGS
+
 
 @click.command()
 @click.option(
@@ -38,9 +40,9 @@ def fetch(source: str, version: str):
     if names["agents"]:
         rich.print("The following agents have been cloned locally:")
         for name in names["agents"]:
-            rich.print(f"[`bold]- {name}[/]")
+            rich.print(f"[bold]- {name}[/]")
 
     if names["tools"]:
         rich.print("The following tools have been cloned locally:")
         for name in names["tools"]:
-            rich.print(f"[`bold]- {name}[/]")
+            rich.print(f"[bold]- {name}[/]")

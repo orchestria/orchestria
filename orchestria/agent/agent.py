@@ -64,7 +64,7 @@ class Agent:
                     # At this point we should have already cloned the tool but it doesn't hurt to check
                     msg = f"Tool '{tool_data}' not found"
                     raise ValueError(msg)
-                tool = Tool.from_file(Path(tool_path))
+                tool = Tool.from_file(Path(tool_path), name=tool_data)
             elif isinstance(tool_data, dict):
                 name, version = list(tool_data.items())[0]
                 tool_path = SETTINGS.get_tool_path(name, version)
