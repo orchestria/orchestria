@@ -22,7 +22,5 @@ class Config:
     version: str
     # The schema for the inputs of the tool
     inputs_schema: Dict[str, str]
-    # The schema for the outputs of the tool
-    outputs_schema: Dict[str, str]
     # Secrets needed by the tool to run
     secrets: List[str] | Dict[str, str] | None = None

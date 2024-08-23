@@ -25,7 +25,6 @@ class Tool:
         entrypoint: str,
         version: str,
         inputs_schema: Dict[str, str],
-        outputs_schema: Dict[str, str],
         secrets: List[str] | Dict[str, str] | None = None,
     ):
         self.name = name
@@ -34,7 +33,6 @@ class Tool:
         self._entrypoint = entrypoint
         self._version = version
         self.inputs_schema = inputs_schema
-        self.outputs_schema = outputs_schema
         # TODO: Ugly, this should be passed as a parameter maybe.
         # Or maybe we should overhaul this SETTINGS thing cause I don't like it.
         if versions := SETTINGS.registry["tools"][name]:
@@ -60,7 +58,6 @@ class Tool:
             entrypoint=config.entrypoint,
             version=config.version,
             inputs_schema=config.inputs_schema,
-            outputs_schema=config.outputs_schema,
             secrets=config.secrets,
         )
 
