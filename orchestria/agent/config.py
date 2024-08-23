@@ -32,6 +32,8 @@ class Config:
     supported_tools: List[Dict[str, str] | str] | None = None
     # The arguments to pass to the model when generating text
     generation_arguments: Dict[str, Any] | None = None
+    # Secrets necessary for the agent to work, usually API keys
+    secrets: List[str] | Dict[str, str] | None = None
 
     def store(self):
         """

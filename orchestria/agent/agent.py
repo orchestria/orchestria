@@ -24,7 +24,8 @@ class Agent:
         provider: str,
         system_prompt: str | None,
         supported_tools: List[Dict[str, str] | str] | None,
-        generation_arguments: Dict[str, Any],
+        generation_arguments: Dict[str, Any] | None,
+        secrets: List[str] | Dict[str, str] | None = None,
     ):
         self._name = name
         self._description = description
@@ -32,6 +33,7 @@ class Agent:
         self._provider = provider
         self._system_prompt = system_prompt or ""
         self._generation_kwargs = generation_arguments
+        self._secrets = secrets
 
         # TODO: This should be part of the Agent manifest maybe, otherwise it's not very flexible
         # to use different system prompts tailored for a specific model
@@ -89,6 +91,7 @@ class Agent:
             system_prompt=config.system_prompt,
             supported_tools=config.supported_tools,
             generation_arguments=config.generation_arguments,
+            secrets=config.secrets,
         )
 
     @classmethod
