@@ -134,26 +134,24 @@ class Agent:
             with console.status("", spinner="point") as status:
                 status.stop()
                 if messages and messages[-1]["role"] == "assistant":
-                    if matches := list(
-                        self._tool_regex.finditer(messages[-1]["content"])
-                    ):
-                        tool_name, tool_inputs = matches[-1].groups()
+                    if matches := self._tool_regex.fullmatch(messages[-1]["content"]):
+                        tool_name, tool_inputs = matches.groups()
                         tool = [
                             t for t in self._supported_tools if t.name == tool_name
                         ][0]
                         try:
-                            tool_outputs = tool.run(tool_inputs)
+                            tool_outputs = await tool.run(tool_inputs)
                             message = {
                                 "role": "user",
                                 "content": f"{tool_outputs}",
                             }
                         except Exception as exc:
                             # TODO: Find a nice way to handle exceptions
-                            # message = {
-                            #     "role": "assistant",
-                            #     "content": f"Something went wrong calling the tool: {exc.with_traceback()}",
-                            # }
                             raise exc
+                            message = {
+                                "role": "assistant",
+                                "content": f"Something went wrong: {exc}",
+                            }
                         messages.append(message)
                         console.print(message["content"], end="\n")
                     else:

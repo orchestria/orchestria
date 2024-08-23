@@ -1,8 +1,12 @@
 # SPDX-FileCopyrightText: 2024-present Silvano Cerza <silvanocerza@gmail.com>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import asyncio
 import json
 import os
+import re
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -93,12 +97,9 @@ class Tool:
         msg = f"Tool '{name}' not found in file '{path}'"
         raise ValueError(msg)
 
-    def run(self, args: str) -> Dict[str, Any]:
+    async def run(self, args: str) -> Dict[str, Any] | str:
         if self._language != "python":
             raise NotImplementedError("Only Python tools are supported as of now")
-
-        import re
-        import subprocess
 
         # Some models are stupid and generate JSON with single quotes.
         args = re.sub(r"(?<!\\)'", '"', args)
@@ -109,14 +110,61 @@ class Tool:
         # We use a custom data dir so that we don't pollute the user's environment with tons of venvs.
         # This way we can also delete the env easily when the user wants to delete a tool.
         command = ["hatch", "--data-dir", ".venv", "run", self._entrypoint, f"'{args}'"]
-        result = subprocess.run(
+        return await self._run_command(command)
+
+    async def _run_command(self, command: List[str]):
+        """
+        Run command asynchronously and return the JSON output as a dictionary.
+
+        If a JSON is not returned it will raise a ValueError.
+
+        If the command requires user input it will block until the user provides it.
+        """
+        secrets = self._secrets or {}
+        process = await asyncio.create_subprocess_shell(
             " ".join(command),
             cwd=self._source_path,
+            stdin=sys.stdin,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
             shell=True,
-            check=False,
-            capture_output=True,
-            text=True,
-            env=self._secrets,
+            env={"FORCE_COLOR": "1", **subprocess.os.environ, **secrets},
         )
 
-        return json.loads(result.stdout)
+        queue = asyncio.queues.Queue()
+
+        async def process_output():
+            # Read 8 bytes at a time to avoid blocking.
+            while text := await process.stdout.read(8):
+                queue.put_nowait(text.decode("utf-8"))
+            # Ugly way to signal the end of the output
+            queue.put_nowait(None)
+
+        async def print_output():
+            full_output = ""
+            while True:
+                data = await queue.get()
+                if data is None:
+                    # Nothing else will be received here
+                    break
+                print(data, end="")
+                full_output += data
+                queue.task_done()
+            lines = full_output.splitlines()
+            return lines
+
+        async with asyncio.taskgroups.TaskGroup() as group:
+            group.create_task(process.wait())
+            group.create_task(process_output())
+            print_output_task = group.create_task(print_output())
+
+        # Parse the last line backwards to find the JSON object
+        last_line = (await print_output_task)[-1].strip()
+        for i in range(len(last_line), -1, -1):
+            chunk = last_line[i:]
+            try:
+                return json.loads(chunk)
+            except json.JSONDecodeError:
+                continue
+
+        raise ValueError("No JSON object found in output")
