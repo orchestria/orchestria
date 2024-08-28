@@ -126,6 +126,12 @@ class Agent:
         raise ValueError(msg)
 
     async def start_chat(self):
+        if self._provider == "ollama":
+            return await self._start_ollama_chat()
+        else:
+            raise NotImplementedError(f"{self._provider} is not supported as of now")
+
+    async def _start_ollama_chat(self):
         console = Console()
         messages = []
         if self._system_prompt:
@@ -169,7 +175,12 @@ class Agent:
                 status.start()
 
                 assistant_response = {"role": "assistant", "content": ""}
-                async for part in await self._chat(messages):  # type: ignore
+                async for part in await self._client.chat(
+                    model=self._model,
+                    messages=messages,
+                    stream=True,
+                    options=self._options,
+                ):  # type: ignore
                     status.stop()
                     if part["message"]["content"]:
                         console.print(part["message"]["content"], end="")
@@ -177,18 +188,3 @@ class Agent:
                 messages.append(assistant_response)
 
             console.print()
-
-    async def _chat(self, messages: List[Dict[str, str]]):
-        if self._provider == "ollama":
-            return self._chat_ollama(messages)
-        else:
-            raise NotImplementedError(f"{self._provider} is not supported as of now")
-
-    async def _chat_ollama(self, messages: List[Dict[str, str]]):
-        async for part in await self._client.chat(
-            model=self._model,
-            messages=messages,
-            stream=True,
-            options=self._options,
-        ):
-            yield part
