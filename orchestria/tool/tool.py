@@ -4,7 +4,6 @@
 import asyncio
 import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -98,8 +97,11 @@ class Tool:
         if self._language != "python":
             raise NotImplementedError("Only Python tools are supported as of now")
 
-        # Some models are stupid and generate JSON with single quotes.
-        args = re.sub(r"(?<!\\)'", '"', args)
+        try:
+            json.loads(args)  # Check if the JSON is valid
+        except json.JSONDecodeError:
+            msg = f"Invalid JSON in arguments: {args}"
+            raise ValueError(msg)
 
         # We need to replace this or the shell will interpret them.
         args = args.replace("{", "{{").replace("}", "}}")
