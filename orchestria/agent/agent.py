@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present Silvano Cerza <silvanocerza@gmail.com>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List
@@ -151,7 +152,7 @@ class Agent:
                             t for t in self._supported_tools if t.name == tool_name
                         ][0]
                         try:
-                            tool_outputs = await tool.run(tool_inputs)
+                            tool_outputs = await tool.run(json.loads(tool_inputs))
                             message = {
                                 "role": "system",
                                 "content": f"{tool_outputs}",

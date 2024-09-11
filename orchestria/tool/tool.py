@@ -93,15 +93,11 @@ class Tool:
         msg = f"Tool '{name}' not found in file '{path}'"
         raise ValueError(msg)
 
-    async def run(self, args: str) -> Dict[str, Any] | str:
+    async def run(self, inputs: Dict[str, Any]) -> Dict[str, Any] | str:
         if self._language != "python":
             raise NotImplementedError("Only Python tools are supported as of now")
 
-        try:
-            json.loads(args)  # Check if the JSON is valid
-        except json.JSONDecodeError:
-            msg = f"Invalid JSON in arguments: {args}"
-            raise ValueError(msg)
+        args = json.dumps(inputs)
 
         # We need to replace this or the shell will interpret them.
         args = args.replace("{", "{{").replace("}", "}}")
