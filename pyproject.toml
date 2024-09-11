@@ -28,6 +28,7 @@ dependencies = [
   "ollama",
   "jinja2",
   "requests",
+  "anthropic",
 ]
 
 [project.scripts]

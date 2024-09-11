@@ -14,6 +14,8 @@ from orchestria.settings import SETTINGS
 from .agent import Agent
 from .config import Config
 
+_SUPPORTED_PROVIDERS = ["ollama", "anthropic"]
+
 
 @click.group
 def agent():
@@ -75,7 +77,7 @@ def create(
         model = rich.prompt.Prompt.ask("Model")
     while not provider:
         provider = rich.prompt.Prompt.ask(
-            "Model provider", choices=["ollama"], default="ollama"
+            "Model provider", choices=_SUPPORTED_PROVIDERS, default="ollama"
         )
     if not system_prompt:
         system_prompt = rich.prompt.Prompt.ask("System prompt (single line)")

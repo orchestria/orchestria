@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List
@@ -33,14 +34,20 @@ class Agent:
         self._model = model
         self._provider = provider
         self._system_prompt = system_prompt or ""
-        self._generation_kwargs = generation_arguments
+        self._generation_kwargs = generation_arguments or {}
+
+        if secrets is None:
+            secrets = {}
+        elif isinstance(secrets, list):
+            print(os.environ)
+            secrets = {s: os.environ[s] for s in secrets}
         self._secrets = secrets
 
         # TODO: This should be part of the Agent manifest maybe, otherwise it's not very flexible
         # to use different system prompts tailored for a specific model
         self._tool_regex = re.compile(r"([a-zA-Z]*)\[(.*)\]$", re.MULTILINE)
 
-        self._supported_tools = []
+        self._supported_tools: List[Tool] = []
         if supported_tools:
             self._load_tools(supported_tools)
 
@@ -50,6 +57,10 @@ class Agent:
             self._client = AsyncClient()
             # TODO: This should probably be gnerator kwargs
             self._options = Options()
+        elif provider == "anthropic":
+            from anthropic import AsyncAnthropic
+
+            self._client = AsyncAnthropic(api_key=self._secrets["ANTHROPIC_API_KEY"])
         else:
             raise NotImplementedError("{provider} is not supported as of now")
 
@@ -129,6 +140,8 @@ class Agent:
     async def start_chat(self):
         if self._provider == "ollama":
             return await self._start_ollama_chat()
+        elif self._provider == "anthropic":
+            return await self._start_anthropic_chat()
         else:
             raise NotImplementedError(f"{self._provider} is not supported as of now")
 
@@ -189,3 +202,111 @@ class Agent:
                 messages.append(assistant_response)
 
             console.print()
+
+    async def _start_anthropic_chat(self):
+        from anthropic.types import TextBlock, ToolUseBlock
+
+        console = Console()
+        messages = []
+        tools = []
+        for tool in self._supported_tools:
+            tools.append(
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": tool.inputs_schema,
+                }
+            )
+        while True:
+            with console.status("", spinner="point") as status:
+                status.stop()
+
+                if not messages or messages[-1]["role"] != "user":
+                    # The user wasn't the last to write, we need to prompt the user.
+                    # We need this check in case there's at least a tool call, if there's been that
+                    # counts as the user writing.
+                    user_prompt = console.input(prompt="[red bold]>>>[/] ")
+                    messages.append({"role": "user", "content": user_prompt})
+
+                status.start()
+                args = {
+                    "system": self._system_prompt,
+                    "messages": messages,
+                    "model": self._model,
+                    "tools": tools,
+                    "max_tokens": 1024,
+                    **self._generation_kwargs,
+                }
+                async with self._client.messages.stream(**args) as stream:
+                    text = None
+                    tool_uses = []
+                    async for event in stream:
+                        if event.type == "text":
+                            status.stop()
+                            # We just print the token received
+                            console.print(event.text, end="")
+
+                        if event.type == "content_block_stop":
+                            if isinstance(event.content_block, TextBlock):
+                                # This is the full text of the message.
+                                # This can be present even if we have tool uses, as it shows the model chain of thought
+                                text = event.content_block.text
+                            elif isinstance(event.content_block, ToolUseBlock):
+                                # We can have multiple tool calls in a single message
+                                tool_uses.append(event.content_block)
+                    if text:
+                        # If there was some text let's print a new line to keep the conversation clean
+                        console.print()
+
+                    if text and not tool_uses:
+                        # We only have text, not tool to call, keep the payload small
+                        messages.append({"role": "assistant", "content": text})
+                    elif tool_uses:
+                        status.start()
+                        # We have tools to call, we need to build a more complex message
+                        message = {
+                            "role": "assistant",
+                            "content": [],
+                        }
+
+                        if text:
+                            # We have some text too, probably the chain of thought
+                            message["content"].append({"type": "text", "text": text})
+
+                        for tool in tool_uses:
+                            # This is the definition of the tool call
+                            message["content"].append(
+                                {
+                                    "type": tool.type,
+                                    "id": tool.id,
+                                    "name": tool.name,
+                                    "input": tool.input,
+                                }
+                            )
+                        messages.append(message)
+
+                    if tool_uses:
+                        status.stop()
+                        message = {"role": "user", "content": []}
+                        # Now we call the tools that we need to call
+                        for tool_use in tool_uses:
+                            tool = [
+                                t
+                                for t in self._supported_tools
+                                if t.name == tool_use.name
+                            ][0]
+                            tool_result = {
+                                "type": "tool_result",
+                                "tool_use_id": tool_use.id,
+                            }
+                            try:
+                                # Calling the tool
+                                tool_outputs = await tool.run(tool_use.input)
+                                tool_result["content"] = json.dumps(tool_outputs)
+                            except Exception as exc:
+                                # Ouch, we failed to call the tool
+                                tool_result["content"] = f"Something went wrong: {exc}"
+                                tool_result["is_error"] = True
+                            message["content"].append(tool_result)
+                        messages.append(message)
+                        # console.print_json(json.dumps(messages))
