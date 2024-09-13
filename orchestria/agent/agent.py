@@ -167,12 +167,12 @@ class Agent:
                         try:
                             tool_outputs = await tool.run(json.loads(tool_inputs))
                             message = {
-                                "role": "system",
+                                "role": "tool",
                                 "content": f"{tool_outputs}",
                             }
                         except Exception as exc:
                             message = {
-                                "role": "system",
+                                "role": "tool",
                                 "content": f"Something went wrong: {exc}",
                             }
                         messages.append(message)
@@ -309,4 +309,3 @@ class Agent:
                                 tool_result["is_error"] = True
                             message["content"].append(tool_result)
                         messages.append(message)
-                        # console.print_json(json.dumps(messages))
