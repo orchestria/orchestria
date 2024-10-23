@@ -121,7 +121,7 @@ class _Settings:
         names = {"tools": [], "agents": []}
         if isinstance(tool_configs, list):
             for tool in tool_configs:
-                names["tools"] = tool["name"]
+                names["tools"].append(tool["name"])
                 self.register_tool(tool["name"], version, target_path)
         else:
             msg = f"Invalid tool '{MANIFEST}' format"
@@ -130,7 +130,7 @@ class _Settings:
         agent_configs = manifest["agents"]
         if isinstance(agent_configs, list):
             for agent in agent_configs:
-                names["agents"] = agent["name"]
+                names["agents"].append(agent["name"])
                 self.register_agent(agent["name"], version, target_path)
         else:
             msg = f"Invalid agent '{MANIFEST}' format"
