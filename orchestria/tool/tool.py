@@ -127,6 +127,7 @@ class Tool:
         )
 
         queue = asyncio.queues.Queue()
+        errors_queue = asyncio.queues.Queue()
 
         async def process_output():
             # Read 8 bytes at a time to avoid blocking.
@@ -134,6 +135,12 @@ class Tool:
                 queue.put_nowait(text.decode("utf-8"))
             # Ugly way to signal the end of the output
             queue.put_nowait(None)
+
+        async def process_errors():
+            while text := await process.stderr.read(8):
+                errors_queue.put_nowait(text.decode("utf-8"))
+            # Ugly way to signal the end of the output
+            errors_queue.put_nowait(None)
 
         async def print_output():
             full_output = ""
@@ -148,10 +155,30 @@ class Tool:
             lines = full_output.splitlines()
             return lines
 
+        async def print_errors():
+            full_output = ""
+            while True:
+                data = await errors_queue.get()
+                if data is None:
+                    # Nothing else will be received here
+                    break
+                print(data, end="")
+                full_output += data
+                errors_queue.task_done()
+            lines = full_output.splitlines()
+            return lines
+
         async with asyncio.taskgroups.TaskGroup() as group:
             group.create_task(process.wait())
             group.create_task(process_output())
+            group.create_task(process_errors())
             print_output_task = group.create_task(print_output())
+            print_errors_task = group.create_task(print_errors())
+
+        if errors := await print_errors_task:
+            # We got errors, best to return these.
+            # Let the model reason them out.
+            return errors
 
         # Parse the last line backwards to find the JSON object
         last_line = (await print_output_task)[-1].strip()
