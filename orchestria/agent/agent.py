@@ -39,7 +39,6 @@ class Agent:
         if secrets is None:
             secrets = {}
         elif isinstance(secrets, list):
-            print(os.environ)
             secrets = {s: os.environ[s] for s in secrets}
         self._secrets = secrets
 
