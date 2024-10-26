@@ -96,7 +96,9 @@ Tools can't be created locally can only be fetched from a git repo with `orchest
 
 An example of well defined tools can be found in [this repo](https://github.com/orchestria/filesystem/tree/main).
 
-All tools must
+All Tools must be runnable as command line tools and expect a JSON string as input and must always return a JSON object if successful.
+
+**Tools can prompt the user if necessary**.
 
 > [!note]
 > As of now if the tool was fetched from a git repo together with other tools or agents
