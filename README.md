@@ -84,7 +84,7 @@ This will completely delete agent `Brown` with no way of recovering.
 If no agent name is provided it will list you all the local agents.
 
 > [!note]
-> As of now if the agent was fetched from a git repo together with its tools
+> As of now if the agent was fetched from a git repo together with other agents or tools
 > they're going to be deleted too. Though they will still appear in the list of
 > available tools.
 
@@ -99,7 +99,7 @@ An example of well defined tools can be found in [this repo](https://github.com/
 All tools must
 
 > [!note]
-> As of now if the agent was fetched from a git repo together with its tools
+> As of now if the tool was fetched from a git repo together with other tools or agents
 > they're going to be deleted too. Though they will still appear in the list of
 > available tools.
 
