@@ -13,36 +13,6 @@ def tool():
     pass
 
 
-@click.command
-@click.option(
-    "--source",
-    required=True,
-    prompt="Git URL",
-    help="Git repository URL of the tool to fetch, this can be a local or remote URL",
-)
-@click.option(
-    "--version",
-    required=True,
-    prompt="Version",
-    help="Version of the tool to fetch, can be a commit hash, tag, or branch.",
-)
-def fetch(source: str, version: str):
-    # TODO: We need to handle versions conflicts when calling this command.
-    # Probably not here but in other parts of the code.
-    # Though we should ask the user if they want to overwrite the existing version.
-    try:
-        tools = SETTINGS.clone(source, version)
-    except ValueError as exc:
-        rich.print(
-            f"[bold red]Error[/] while fetching tool: [bold red]{exc}[/]",
-        )
-        return
-
-    rich.print("The following tools have been cloned locally:")
-    for name in tools:
-        rich.print(f"[bold]- {name}[/]")
-
-
 @click.option("--version")
 @click.option("--name")
 @click.command("delete")
@@ -70,6 +40,5 @@ def list_tools():
     rich.print_json(data=tools)
 
 
-tool.add_command(fetch)
 tool.add_command(delete_tool)
 tool.add_command(list_tools)
