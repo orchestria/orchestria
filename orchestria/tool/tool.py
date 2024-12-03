@@ -105,11 +105,13 @@ class Tool:
         # We want to wrap args in double quotes, so we need to escape existing ones.
         # Wrapping in single quote makes it impossible to use single quotes in the string
         # sent as input to the tool as the escape sequences are not interpret in that case.
-        args = args.replace('"', '\\"')
+        # args = args.replace('"', '\\"')
+
+        args = args.replace("'", "'\"'\"'")
 
         # We use a custom data dir so that we don't pollute the user's environment with tons of venvs.
         # This way we can also delete the env easily when the user wants to delete a tool.
-        command = ["hatch", "--data-dir", ".venv", "run", self._entrypoint, f'"{args}"']
+        command = ["hatch", "--data-dir", ".venv", "run", self._entrypoint, f"'{args}'"]
         return await self._run_command(command)
 
     async def _run_command(self, command: List[str]):
